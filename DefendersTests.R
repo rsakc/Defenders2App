@@ -10,7 +10,6 @@ library(gdata)
 
 #Read in Defenders Data
 data.all <-read_csv("https://www.stat2games.sites.grinnell.edu/data/defenders/getdata.php") 
-#data.all <- separate(data = data.all, col = TurretType, into = c("Turret", "Upgrade"), sep = "LV")
 
 #Filter by Level
 data.all <- filter(data.all, Level > 0)
@@ -23,7 +22,7 @@ data.all$GroupID <- as.character(data.all$GroupID)
 data.all$PlayerID <- as.character(data.all$PlayerID)
 
 #Percent Destroyted Columnn
-data.all <- mutate(data.all, PercDestroyed = Destroyed/Shot)
+data.all <- mutate(data.all, PercentDestroyed = (Destroyed/Shot) * 100)
 
 #For Visuals
 data.all["None"] = NA
@@ -71,7 +70,7 @@ ui <- fluidPage(
       selectInput(inputId = "yvar",
                   label = "Y Variable:",
                   #columns of the dataset
-                  choices = c("Shot", "Destroyed", "PercDestroyed"),
+                  choices = c("Shot", "Destroyed", "PercentDestroyed"),
                   selected = "Shot",
                   multiple = FALSE),
       
@@ -110,7 +109,7 @@ ui <- fluidPage(
       
       plotOutput(outputId = "Plot"),
       verbatimTextOutput("help"),
-      verbatimTextOutput("why"),
+      verbatimTextOutput("ttest"),
       tableOutput("tbl1"),
       h3(textOutput("caption"))
     )
@@ -261,6 +260,62 @@ server <- function(input, output, session) {
     }
     
     
+    
+    #Two sample t test
+    output$ttest <- renderPrint({
+      
+      #Reactive data
+      plotData <- plotDataR()
+      
+      #Setting Up
+      YVariable = plotData %>% pull(input$yvar)
+      YVariable = drop.levels(YVariable)
+      XVariable = plotData %>% pull(input$xvar)
+      XVariable = drop.levels(as.factor(XVariable))
+      
+      ColorVariable = plotData %>% pull(input$color)
+      ColorVariable = drop.levels(as.factor(ColorVariable))
+      FacetVariable = plotData %>% pull(input$facets)
+      FacetVariable = drop.levels(as.factor(FacetVariable))
+   
+      xlevel = nlevels(XVariable)
+      colorlevel = nlevels(ColorVariable)
+      facetlevel = nlevels(FacetVariable)
+      
+      if(input$tests == "two-sample t-test"){
+        
+        if(input$facets == "None"){
+          
+          if(xlevel == 2){
+            
+            if(input$color == input$xvar | colorlevel == 1 | input$color == "None"){
+              
+              t.test(YVariable ~ XVariable)
+              
+            } else{"Choose a different color option"}
+            
+            
+          } else {"X Variable must have exactly 2 levels"}
+          
+        } else {"Facet option must be set to None"}
+        
+        
+        
+      }
+      
+      
+    })
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     return(myplot)
     
   })
@@ -268,23 +323,14 @@ server <- function(input, output, session) {
   
   
   
-  
-  
-  
-  
-  
-    
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
+  #Download Data
+  output$downloadData <- downloadHandler(
+    filename = function() {
+      paste('Data-', Sys.Date(), '.csv', sep="")
+    },
+    content = function(con) {
+      write.csv(plotDataR(), con)
+    })
   
 }
 
