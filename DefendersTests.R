@@ -7,6 +7,7 @@ library(tidyr)
 library(purrr)
 library(broom)
 library(gdata)
+library(curl)
 
 #Read in Defenders Data
 data.all <-read_csv("https://www.stat2games.sites.grinnell.edu/data/defenders/getdata.php") 
