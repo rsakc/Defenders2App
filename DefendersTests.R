@@ -109,8 +109,8 @@ ui <- fluidPage(
       
       plotOutput(outputId = "Plot"),
       verbatimTextOutput("help"),
+      verbatimTextOutput("anova"),
       verbatimTextOutput("ttest"),
-      tableOutput("tbl1"),
       h3(textOutput("caption"))
     )
   )
@@ -253,10 +253,16 @@ server <- function(input, output, session) {
       }
     }
     
-    if (input$facets != "None") {
+    if (input$facets != "None" & input$color == "None") {
       myplot <- myplot + facet_wrap(as.formula(paste("~", input$facets))) +
         labs(title = paste("Plot of",input$yvar, "by",input$xvar, "and Faceted by", input$facets)) +
         theme(strip.text = element_text(size = 16)) 
+   
+    } else if(input$facets != "None" & input$color != "None"){
+      myplot <- myplot + facet_wrap(as.formula(paste("~", input$facets))) +
+        labs(title = paste("Plot of",input$yvar, "by", input$xvar, "and Colored by", input$color, "and Faceted by", input$facets)) +
+        theme(strip.text = element_text(size = 16)) 
+    
     }
     
     
@@ -292,29 +298,106 @@ server <- function(input, output, session) {
               
               t.test(YVariable ~ XVariable)
               
-            } else{"Choose a different color option"}
+            } else{"Only two groups can be compared in a two sample t-test. Choose a different color option."}
             
             
-          } else {"X Variable must have exactly 2 levels"}
+          } else {"X Variable must have exactly 2 levels to run the two sample t-test."}
           
-        } else {"Facet option must be set to None"}
-        
-        
-        
-      }
+        } else {"Facet option must be set to None to run the two sample t-test."}
       
+      }
       
     })
     
+    #ANOVA
+    output$help <- renderPrint({
+      
+      #Reactive data
+      plotData <- plotDataR()
+      
+      #Setting Up
+      YVariable = plotData %>% pull(input$yvar)
+      YVariable = drop.levels(YVariable)
+      XVariable = plotData %>% pull(input$xvar)
+      XVariable = drop.levels(as.factor(XVariable))
+      
+      ColorVariable = plotData %>% pull(input$color)
+      ColorVariable = drop.levels(as.factor(ColorVariable))
+      FacetVariable = plotData %>% pull(input$facets)
+      FacetVariable = drop.levels(as.factor(FacetVariable))
+      
+      xlevel = nlevels(XVariable)
+      colorlevel = nlevels(ColorVariable)
+      facetlevel = nlevels(FacetVariable)  
+      
+
+    if(input$tests == "ANOVA"){
+
+      if(xlevel > 1 & colorlevel > 1 & facetlevel > 1){
+        
+        anovatest <- aov(YVariable ~ XVariable + ColorVariable + FacetVariable + 
+                            XVariable*ColorVariable + 
+                            XVariable*FacetVariable +
+                            ColorVariable*FacetVariable)
     
-    
-    
-    
-    
-    
-    
-    
-    
+      } else if(xlevel > 1 & colorlevel > 1 & facetlevel < 2){
+
+
+        anovatest <-  aov(YVariable ~ XVariable + ColorVariable +
+                            XVariable*ColorVariable)
+
+
+
+      } else if(xlevel > 1 & colorlevel < 2 & facetlevel > 1 ){
+
+
+        anovatest <-  aov(YVariable ~ XVariable + FacetVariable +
+                           XVariable*FacetVariable)
+
+
+
+      } else if(xlevel > 1 & colorlevel < 2 & facetlevel < 2){
+
+
+        anovatest <-  aov(YVariable ~ XVariable)
+
+      } else if(xlevel < 2 & colorlevel > 1 & facetlevel > 1){
+
+
+        anovatest <-  aov(YVariable ~ ColorVariable + FacetVariable +
+                     ColorVariable*FacetVariable)
+
+
+      } else if(xlevel < 2 & colorlevel > 1 & facetlevel < 2){
+
+        anovatest <-  aov(YVariable ~ ColorVariable)
+
+      } else if(xlevel < 2 & colorlevel < 2 & facetlevel > 1){
+
+        anovatest <-  aov(YVariable ~ FacetVariable)
+
+      } else if(xlevel < 2 & colorlevel < 2 & facetlevel < 2){
+
+        "At least two levels are needed to run the ANOVA"
+
+      }
+      
+      
+      #Making Tidy table and adding columns/rows
+      tidyanova = tidy(anovatest)
+      sum_df = sum(tidyanova$df)
+      sum_ss = sum(tidyanova$'sumsq')
+      tidyanova = add_row(tidyanova,term = "Total", df = sum_df, sumsq = sum_ss)
+      tidyanova$sumsq = round(tidyanova$sumsq, digits = 2)
+      tidyanova$meansq = round(tidyanova$meansq, digits = 2)
+      tidyanova$statistic = round(tidyanova$statistic, digits = 2)
+      
+
+      return(tidyanova)
+      
+    }
+  })
+      
     
     return(myplot)
     
