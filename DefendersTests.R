@@ -1,5 +1,6 @@
 #LoadingLibraries
 library(shiny)
+library(shinythemes)
 library(readr)
 library(ggplot2)
 library(dplyr)
@@ -36,7 +37,8 @@ all_players <- sort(unique(data.all$PlayerID))
 
 #UI
 ui <- fluidPage(
-  # App title ----
+  theme = shinytheme("united"),
+
   titlePanel("Defenders Data Visualizations"),
   
   sidebarLayout(
@@ -44,10 +46,10 @@ ui <- fluidPage(
       
       selectInput(inputId = "groupID",
                   label = "Group ID:", 
-                  choices =  c("all", all_groups),
+                  choices =  all_groups,
                   multiple = TRUE,
                   selectize = TRUE,
-                  selected = "all"),
+                  selected = "STA310"),
       
       selectInput(inputId = "playerID",
                   label = "Player ID:",
@@ -98,21 +100,20 @@ ui <- fluidPage(
       
       downloadButton('downloadData', label = "Defenders Data"),
       
-      #Link
-      p(h4("For more information, hit the link below:"), align = "center"),
-      a(h4("More Information"),
-        href="https://stat2labs.sites.grinnell.edu/defenders.html", 
-        align="center")
       
-       ),
-    
+      #Link
+      a(h5("Instructor Resources"),
+        href="https://stat2labs.sites.grinnell.edu/defenders.html", 
+        align="left", target = "_blank")),
+      
+      
     mainPanel(
       
       plotOutput(outputId = "Plot"),
-      verbatimTextOutput("help"),
       verbatimTextOutput("anova"),
       verbatimTextOutput("ttest"),
-      h3(textOutput("caption"))
+      verbatimTextOutput("test")
+    
     )
   )
 )
@@ -124,26 +125,17 @@ server <- function(input, output, session) {
 
   #Reactive Data
   plotDataR <- reactive({
-    if("all" %in% input$groupID){
-      if("all" %in% input$playerID){
-        data <- data.all %>% filter(Level %in% input$levels)
-      } else {
-        data <- data.all %>% filter(Level %in% input$levels, PlayerID %in% input$playerID)
-      }
-      
-    } else{
-      if("all" %in% input$playerID){
+   
+    if("all" %in% input$playerID){
         data <- data.all %>% filter(Level %in% input$levels, GroupID %in% input$groupID)
       } else {
         data <- data.all %>% filter(Level %in% input$levels, PlayerID %in% input$playerID, GroupID %in% input$groupID)
       }
-    }
     
     return(data)
   })
   
   
-
   # Dynamic PlayerID Input
   observe({
     
@@ -151,8 +143,7 @@ server <- function(input, output, session) {
     # or reactivity occurs (keeps the app from crashing)
     req(input$groupID)   
     
-    if ("all" %in% input$groupID) {gamedata <- data.all}
-    else{gamedata <- filter(data.all, GroupID %in% input$groupID)}
+    gamedata <- filter(data.all, GroupID %in% input$groupID)
     
     updateSelectInput(session, 
                       "playerID",
@@ -165,8 +156,13 @@ server <- function(input, output, session) {
   observe({
     req(input$groupID)   
     
-    if ("all" %in% input$groupID) {gamedata <- data.all}
-    else{gamedata <- filter(data.all, GroupID %in% input$groupID)}
+    if("all" %in% input$playerID){
+    gamedata <- filter(data.all, GroupID %in% input$groupID)
+    
+    } else{
+      gamedata <- filter(data.all, GroupID %in% input$groupID, PlayerID %in% input$playerID)
+    }
+    
     updateSelectInput(session, 
                       "levels",
                       choices = sort(unique(gamedata$Level)),
@@ -174,14 +170,17 @@ server <- function(input, output, session) {
   })
   
   
-  #FIX TITLES LATER
-  
   #Creating Visual
   output$Plot <- renderPlot({
-    req(input$groupID)
-   
+  
     #Using reactive data
     plotData <- plotDataR()
+    
+    #Require
+    req(input$groupID)
+    req(input$playerID)
+    req(input$levels)
+    
     
     #If boxplot option is selected
     if (input$bplot == "TRUE"){
@@ -189,7 +188,7 @@ server <- function(input, output, session) {
       #If there is a color option selected
       if(input$color != "None"){
         myplot <- ggplot(data = plotData, aes_string(x = input$xvar, y = input$yvar, color=input$color)) +
-          geom_boxplot() +
+          geom_boxplot(outlier.shape = NA) +
           geom_point(position = position_jitterdodge()) + 
           scale_color_manual(values=c("blue", "red", "orange", "purple", "lightblue", "pink", "green", "gray", "black", "lightsalmon", "lightskyblue", "maroon"))+
           labs(title = paste("Plot of",input$yvar, "by",input$xvar, "and Colored by", input$color)) + 
@@ -205,7 +204,7 @@ server <- function(input, output, session) {
       #If there no color option selected
      } else{
         myplot <- ggplot(data = plotData, aes_string(x = input$xvar, y = input$yvar, fill = input$color)) +
-          geom_boxplot() +
+          geom_boxplot(outlier.shape = NA) +
           geom_point(position = position_jitterdodge()) + 
           scale_fill_manual(values = rep(NA, 2)) +
           labs(title = paste("Plot of",input$yvar, "by",input$xvar)) + 
@@ -254,7 +253,7 @@ server <- function(input, output, session) {
       }
     }
     
-    if (input$facets != "None" & input$color == "None") {
+    if(input$facets != "None" & input$color == "None") {
       myplot <- myplot + facet_wrap(as.formula(paste("~", input$facets))) +
         labs(title = paste("Plot of",input$yvar, "by",input$xvar, "and Faceted by", input$facets)) +
         theme(strip.text = element_text(size = 16)) 
@@ -311,7 +310,7 @@ server <- function(input, output, session) {
     })
     
     #ANOVA
-    output$help <- renderPrint({
+    output$anova <- renderPrint({
       
       #Reactive data
       plotData <- plotDataR()
@@ -379,12 +378,20 @@ server <- function(input, output, session) {
 
       } else if(xlevel < 2 & colorlevel < 2 & facetlevel < 2){
 
-        "At least two levels are needed to run the ANOVA"
+        message <- "At least two levels are needed to run the ANOVA"
 
       }
       
-      
-      #Making Tidy table and adding columns/rows
+      #Returning Error message
+      if(xlevel < 2 & colorlevel < 2 & facetlevel < 2){
+        
+        return(message)
+        
+       
+      #If we ran an ANOVA   
+      } else{
+     
+       #Making Tidy table and adding columns/rows
       tidyanova = tidy(anovatest)
       sum_df = sum(tidyanova$df)
       sum_ss = sum(tidyanova$'sumsq')
@@ -393,19 +400,16 @@ server <- function(input, output, session) {
       tidyanova$meansq = round(tidyanova$meansq, digits = 2)
       tidyanova$statistic = round(tidyanova$statistic, digits = 2)
       
-
       return(tidyanova)
       
+      } 
+
     }
   })
       
-    
     return(myplot)
     
   })
-  
-  
-  
   
   #Download Data
   output$downloadData <- downloadHandler(
