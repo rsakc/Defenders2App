@@ -419,7 +419,7 @@ server <- function(input, output, session) {
     content = function(con) {
       write.csv(plotDataR(), con)
     })
-  
+   
 }
 
 shinyApp(ui = ui, server = server)
