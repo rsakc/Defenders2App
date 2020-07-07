@@ -9,7 +9,7 @@ library(purrr)
 ###
 require(broom)
 require(gdata)
-data.all <-read.csv("https://www.stat2games.sites.grinnell.edu/data/defenders/getdata.php") 
+data.all <-read_csv("https://www.stat2games.sites.grinnell.edu/data/defenders/getdata.php") 
 #data.all <- separate(data = data.all, col = TurretType, into = c("Turret", "Upgrade"), sep = "LV")
 data.all <- filter(data.all, Level > 0)
 data.all$Level <- as.factor(data.all$Level)
