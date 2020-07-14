@@ -55,7 +55,7 @@ ui <- fluidPage(
                   choices =  all_groups,
                   multiple = TRUE,
                   selectize = TRUE,
-                  selected = "STA310"),
+                  selected = "sta310"),
       
       selectInput(inputId = "playerID",
                   label = "Player ID:",
