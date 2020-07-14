@@ -1,4 +1,4 @@
-#Last Updated on July 13 2020
+#Last Updated on July 14 2020
 
 #Loading Libraries
 library(shiny)
@@ -17,6 +17,10 @@ data.all <-read_csv("https://www.stat2games.sites.grinnell.edu/data/defenders/ge
 
 #Filter by Level
 data.all <- filter(data.all, Level > 0)
+
+#To Lower
+data.all$PlayerID <- tolower(data.all$PlayerID)
+data.all$GroupID <- tolower(data.all$GroupID)
 
 #Convert to Factor/Character
 data.all$Level <- as.factor(data.all$Level)
