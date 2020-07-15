@@ -1,4 +1,4 @@
-#Last Updated on July 14 2020
+#Last Updated on July 15 2020
 
 #Loading Libraries
 library(shiny)
@@ -12,9 +12,16 @@ library(broom)
 library(gdata)
 library(curl)
 
-#Read in Defenders Data
-data.all <-read_csv("https://www.stat2games.sites.grinnell.edu/data/defenders/getdata.php") 
+#Importing Data
+n <- sample(c(0,1), size = 1)
 
+if(n == 0){ 
+  data.all <-read_csv("https://www.stat2games.sites.grinnell.edu/data/defenders/getdata.php") 
+
+} else{
+  data.all <-read_csv("https://www.stat2games.sites.grinnell.edu/data/defenders/getdata.php") 
+} 
+  
 #Filter by Level
 data.all <- filter(data.all, Level > 0)
 
