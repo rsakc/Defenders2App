@@ -1,4 +1,4 @@
-#Last Updated on July 17 2020
+#Last Updated on July 20 2020
 
 #Loading Libraries
 library(shiny)
@@ -53,7 +53,7 @@ all_players <- sort(unique(data.all$PlayerID))
 ui <- fluidPage(
   theme = shinytheme("united"),
 
-  titlePanel("Defenders Data Visualizations"),
+  titlePanel("Defenders Hypothesis Tests"),
   
   sidebarLayout(
     sidebarPanel(
