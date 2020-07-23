@@ -1,4 +1,4 @@
-#Last Updated on July 20 2020
+#Last Updated on July 23 2020
 
 #Loading Libraries
 library(shiny)
@@ -79,14 +79,12 @@ ui <- fluidPage(
       
       selectInput(inputId = "xvar",
                   label = "X Variable:",
-                  #columns of the dataset
                   choices = c("Level", "Round", "Location", "TurretType", "Upgrade", "Medicine", "Virus"),
                   selected = "Medicine",
                   multiple = FALSE),
       
       selectInput(inputId = "yvar",
                   label = "Y Variable:",
-                  #columns of the dataset
                   choices = c("Shot", "Destroyed", "PercentDestroyed"),
                   selected = "Shot",
                   multiple = FALSE),
@@ -116,7 +114,7 @@ ui <- fluidPage(
       downloadButton('downloadData', label = "Defenders Data"),
       
       
-      #Link
+      #Instructor Link
       a(h5("Instructor Resources"),
         href="https://stat2labs.sites.grinnell.edu/defenders.html", 
         align="left", target = "_blank")),
@@ -175,7 +173,7 @@ server <- function(input, output, session) {
   })
   
   
-  # Dynamic Level Input 
+  #Dynamic Level Input 
   observe({
     req(input$groupID)   
     
@@ -276,11 +274,13 @@ server <- function(input, output, session) {
       }
     }
     
+    #Facet and No Color
     if(input$facets != "None" & input$color == "None") {
       myplot <- myplot + facet_wrap(as.formula(paste("~", input$facets))) +
         labs(title = paste("Plot of",input$yvar, "by",input$xvar, "and Faceted by", input$facets)) +
         theme(strip.text = element_text(size = 16)) 
    
+    #Facet and Color
     } else if(input$facets != "None" & input$color != "None"){
       myplot <- myplot + facet_wrap(as.formula(paste("~", input$facets))) +
         labs(title = paste("Plot of",input$yvar, "by", input$xvar, "and Colored by", input$color, "and Faceted by", input$facets)) +
@@ -353,7 +353,7 @@ server <- function(input, output, session) {
       colorlevel = nlevels(ColorVariable)
       facetlevel = nlevels(FacetVariable)  
       
-
+    #Anova test selected (8 possible outcomes)
     if(input$tests == "ANOVA"){
 
       if(xlevel > 1 & colorlevel > 1 & facetlevel > 1){
@@ -810,7 +810,7 @@ server <- function(input, output, session) {
       
     })
     
-
+    #Returning visual
     return(myplot)
     
   })
@@ -826,4 +826,5 @@ server <- function(input, output, session) {
    
 }
 
+#Running App
 shinyApp(ui = ui, server = server)
